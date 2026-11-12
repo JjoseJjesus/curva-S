@@ -25,11 +25,12 @@ svg{width:100%;height:auto}
 table{width:100%;border-collapse:collapse;font-size:12px}td,th{padding:4px;border-bottom:1px solid var(--b);text-align:left}
 .cr{background:var(--d);color:#fff;border-radius:4px;padding:0 5px;font-size:10px}
 #dl{max-height:420px;overflow:auto}
-.gr{display:flex;align-items:center;height:22px;font-size:12px}.gn{width:190px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:6px}
+.gr{display:flex;align-items:center;height:22px;font-size:12px}.gn{width:260px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:6px}
 .gt{position:relative;flex:1;height:14px;background:var(--bg);border-radius:3px}
 .gb{position:absolute;top:0;height:100%;background:#8bb4f7;border-radius:3px;overflow:hidden}.gb b{display:block;height:100%;background:var(--p)}
 .gc{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--d)}
-.g2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px}#at input{min-width:90px}#at td:nth-child(2) input{min-width:200px}#at button{width:auto;padding:2px 8px;background:var(--d)}
+.g2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px}#at input{min-width:90px}#at input[type=checkbox]{min-width:0;width:auto}#at th:first-child,#at td:first-child{width:40px;min-width:0;text-align:center}#at td{white-space:nowrap}#at td:nth-last-child(n+3) input:not([type]){min-width:220px}#at tr.sm{background:var(--bg)}#at button{width:auto;padding:2px 8px;background:var(--d)}
+#at th{font-size:11px}#at input[type=date]{width:104px;min-width:0;padding:2px 1px;font-size:11px}#at input[type=number]{width:56px;min-width:0;padding:2px}#at td:nth-last-child(2),#at th:nth-last-child(2),#at td:nth-last-child(3),#at th:nth-last-child(3){width:58px;text-align:center}
 .hint{font-size:12px;color:var(--m)}
 @media(max-width:800px){main{grid-template-columns:1fr}}
 </style>
@@ -71,7 +72,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}td,th{padding:4px;borde
 <aside class="card wide"><h2>Actividades con retraso</h2>
  <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="onlyc" style="width:auto" checked> Solo críticas</label>
  <div id="dl"></div></aside>
-<section class="card wide"><h2>Gantt general (títulos principales)</h2><div id="gt"></div></section>
+<section class="card wide"><h2>Gantt general (títulos principales)</h2><label style="display:flex;gap:6px;align-items:center;margin-bottom:6px"><input type="checkbox" id="sub" style="width:auto" checked> Mostrar niveles 2 y 3</label><div id="gt"></div></section>
 </main>
 <script>
 // ===== Firebase opcional: pega aquí tu configuración (Firestore). Si es null, usa solo localStorage =====
@@ -84,10 +85,10 @@ const P=()=>S.projects[S.cur],V=()=>{const p=P();return p&&p.versions[p.vi]};
 const dur=t=>Math.max(t.f-t.s+1,1),leaf=(v,c)=>v.tasks.filter(t=>!t.sum&&(!c||t.crit));
 const ld=u=>new Promise(r=>{const s=document.createElement('script');s.src=u;s.onload=r;document.head.appendChild(s)});
 function save(){localStorage.setItem('cs',JSON.stringify(S));if(db)db.collection('curvaS').doc('main').set({data:JSON.stringify(S)}).catch(console.error)}
-function parse(x){const d=new DOMParser().parseFromString(x,'text/xml'),o=[];let cur='';
+function parse(x){const d=new DOMParser().parseFromString(x,'text/xml'),o=[];let cur='',c2='',c3='';
  for(const t of d.getElementsByTagName('Task')){const g=n=>{for(const c of t.children)if(c.tagName===n)return c.textContent;return''};
   if(g('UID')==='0'||!g('Start'))continue;
-  if(g('Summary')==='1'&&(+g('OutlineLevel')||1)===1)cur=g('Name');o.push({id:g('UID'),grp:cur,name:g('Name'),s:toD(g('Start')),f:toD(g('Finish')),pct:+g('PercentComplete')||0,crit:g('Critical')==='1',lvl:+g('OutlineLevel')||1,sum:g('Summary')==='1'})}
+  const lv=+g('OutlineLevel')||1;if(g('Summary')==='1'){if(lv===1){cur=g('Name');c2=c3=''}else if(lv===2){c2=g('Name');c3=''}else if(lv===3)c3=g('Name')}o.push({id:g('UID'),wbs:g('WBS'),grp:cur,g2:c2,g3:c3,name:g('Name'),s:toD(g('Start')),f:toD(g('Finish')),pct:+g('PercentComplete')||0,crit:g('Critical')==='1',lvl:+g('OutlineLevel')||1,sum:g('Summary')==='1'})}
  const st=d.getElementsByTagName('StatusDate')[0];return{tasks:o,date:st?toD(st.textContent):today()}}
 const planned=(v,d,c)=>{const L=leaf(v,c);let a=0,w=0;L.forEach(t=>{const k=dur(t);w+=k;a+=k*Math.min(Math.max((d-t.s+1)/k,0),1)});return w?a/w*100:0};
 const real=(v,c)=>{const L=leaf(v,c);let a=0,w=0;L.forEach(t=>{const k=dur(t);w+=k;a+=k*t.pct/100});return w?a/w*100:0};
@@ -111,11 +112,25 @@ function delays(v){const cd=cutD(),oc=$('onlyc').checked;
   .sort((x,y)=>y.t.crit-x.t.crit||(y.e-y.t.pct)-(x.e-x.t.pct));
  return r.length?`<table><tr><th>Actividad</th><th>Fin</th><th>Real</th><th>Prog.</th></tr>${r.map(x=>`<tr><td>${x.t.crit?'<span class="cr">CR</span> ':''}${esc(x.t.name)}</td><td>${fmt(x.t.f)}</td><td>${x.t.pct.toFixed(0)}%</td><td>${x.e.toFixed(0)}%</td></tr>`).join('')}</table>`:'<p class="hint">Sin actividades atrasadas con este filtro.</p>'}
 const esc=s=>s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
-function gantt(v){const [a,b]=range(v),n=b-a||1,G={};
- leaf(v).forEach(t=>{const k=t.grp||'General',g=G[k]=G[k]||{name:k,s:1e9,f:0,w:0,a:0};g.s=Math.min(g.s,t.s);g.f=Math.max(g.f,t.f);g.w+=dur(t);g.a+=dur(t)*t.pct/100});
- const c=Math.min(Math.max((cutD()-a)/n*100,0),100);
- return Object.values(G).map(g=>`<div class="gr"><div class="gn" title="${esc(g.name)}">${esc(g.name)}</div><div class="gt"><div class="gb" style="left:${(g.s-a)/n*100}%;width:${Math.max((g.f-g.s+1)/n*100,0.5)}%"><b style="width:${g.a/g.w*100}%"></b></div><div class="gc" style="left:${c}%"></div></div></div>`).join('')}
-function atable(v){$('at').innerHTML='<tr><th>Título principal</th><th>Actividad</th><th>Inicio</th><th>Fin</th><th>Días</th><th>Crítica</th><th>% avance</th><th></th></tr>'+v.tasks.map((t,i)=>t.sum?'':`<tr><td><input data-i="${i}" data-k="grp" value="${esc(t.grp||'')}"></td><td><input data-i="${i}" data-k="name" value="${esc(t.name)}"></td><td><input type="date" data-i="${i}" data-k="s" value="${fmt(t.s)}"></td><td><input type="date" data-i="${i}" data-k="f" value="${fmt(t.f)}"></td><td>${dur(t)}</td><td><input type="checkbox" data-i="${i}" data-k="crit" ${t.crit?'checked':''} style="width:auto"></td><td><input type="number" min="0" max="100" step="1" data-i="${i}" data-k="pct" value="${t.pct}"></td><td><button data-del="${i}">✕</button></td></tr>`).join('')}
+function gantt(v){const [a,b]=range(v),n=b-a||1,G={},mk=k=>({name:k,s:1e9,f:0,w:0,a:0,c:{}}),ag=(o,t)=>{o.s=Math.min(o.s,t.s);o.f=Math.max(o.f,t.f);o.w+=dur(t);o.a+=dur(t)*t.pct/100};
+ leaf(v).forEach(t=>{const k=t.grp||'General',o=G[k]||(G[k]=mk(k));ag(o,t);
+  if(t.g2){const o2=o.c[t.g2]||(o.c[t.g2]=mk(t.g2));ag(o2,t);if(t.g3){const o3=o2.c[t.g3]||(o2.c[t.g3]=mk(t.g3));ag(o3,t)}}});
+ const c=Math.min(Math.max((cutD()-a)/n*100,0),100),sub=$('sub').checked;
+
+ const T0=v.tasks;if(T0.some(t=>t.sum)){const cd=wbsCodes(T0);return T0.map((t,i)=>{if(!(t.lvl===1||(sub&&t.lvl<=3)))return'';const p=t.sum?aggT(T0,i)[0]:t.pct,l=t.lvl-1;return `<div class="gr"><div class="gn" style="padding-left:${l*14}px;${l?'':'font-weight:600'}" title="${esc(cd[i]+' '+t.name)}">${esc(cd[i])} ${esc(t.name)}</div><div class="gt"><div class="gb" style="left:${(t.s-a)/n*100}%;width:${Math.max((t.f-t.s+1)/n*100,0.5)}%;${l?'opacity:.8':''}"><b style="width:${p}%"></b></div><div class="gc" style="left:${c}%"></div></div></div>`}).join('')}
+ const row=(g,i)=>`<div class="gr"><div class="gn" style="padding-left:${i*14}px;${i?'':'font-weight:600'}" title="${esc(g.name)}">${i?'↳ ':''}${esc(g.name)}</div><div class="gt"><div class="gb" style="left:${(g.s-a)/n*100}%;width:${Math.max((g.f-g.s+1)/n*100,0.5)}%;${i?'opacity:.7':''}"><b style="width:${g.a/g.w*100}%"></b></div><div class="gc" style="left:${c}%"></div></div></div>`;
+ const out=(g,i)=>row(g,i)+(sub?Object.values(g.c).map(x=>out(x,i+1)).join(''):'');
+ return Object.values(G).map(g=>out(g,0)).join('')}
+const wbsCodes=T=>{const cn=[];return T.map(t=>{cn[t.lvl-1]=(cn[t.lvl-1]||0)+1;cn.length=t.lvl;return t.wbs||cn.map(x=>x||1).join('.')})};
+const aggT=(T,i)=>{const L=T[i].lvl;let a=0,w=0,q=0;for(let j=i+1;j<T.length&&T[j].lvl>L;j++){const u=T[j];if(u.sum)continue;const k=dur(u);w+=k;a+=k*u.pct/100;q+=k*pp(u)/100}return w?[Math.round(a/w*100),Math.round(q/w*100)]:[0,0]};
+const pp=t=>Math.round(Math.min(Math.max((cutD()-t.s+1)/dur(t),0),1)*100);
+function atable(v){const T=v.tasks,hasS=T.some(t=>t.sum),codes=wbsCodes(T);
+ const agg=i=>aggT(T,i);
+ $('at').innerHTML=`<tr><th>Crít.</th><th>EDT</th>${hasS?'':'<th>Título principal</th>'}<th>Actividad</th><th>Inicio</th><th>Fin</th><th>Días</th><th>% avance</th><th title="% programado a la fecha de corte">% prog.</th><th></th></tr>`+T.map((t,i)=>{
+  const code=hasS?codes[i]:'';
+  const pad=hasS?(t.lvl-1)*14+4:4;
+  if(t.sum){const r=agg(i);return `<tr class="sm"><td></td><td>${esc(code)}</td><td style="padding-left:${pad}px;font-weight:600">${esc(t.name)}</td><td>${fmt(t.s)}</td><td>${fmt(t.f)}</td><td>${dur(t)}</td><td>${r[0]}%</td><td>${r[1]}%</td><td></td></tr>`}
+  return `<tr><td><input type="checkbox" data-i="${i}" data-k="crit" ${t.crit?'checked':''}></td><td>${esc(code)}</td>${hasS?'':`<td><input data-i="${i}" data-k="grp" value="${esc(t.grp||'')}"></td>`}<td style="padding-left:${pad}px"><input data-i="${i}" data-k="name" value="${esc(t.name)}"></td><td><input type="date" data-i="${i}" data-k="s" value="${fmt(t.s)}"></td><td><input type="date" data-i="${i}" data-k="f" value="${fmt(t.f)}"></td><td>${dur(t)}</td><td><input type="number" min="0" max="100" step="1" data-i="${i}" data-k="pct" value="${t.pct}"></td><td style="font-weight:600;color:${t.pct<pp(t)?'var(--d)':'inherit'}">${pp(t)}%</td><td><button data-del="${i}">✕</button></td></tr>`}).join('')}
 function render(){const p=P();
  $('sp').innerHTML=S.projects.map((x,i)=>`<option value="${i}" ${i===S.cur?'selected':''}>${esc(x.name||'Sin nombre')}</option>`).join('');
  ['name','sup','insp','co'].forEach(k=>$(k).value=p?p[k]:'');
@@ -147,8 +162,8 @@ $('at').onchange=e=>{const el=e.target,t=V().tasks[+el.dataset.i],k=el.dataset.k
  if(t.f<t.s)t.f=t.s;save();render()};
 $('at').onclick=e=>{if(e.target.dataset.del!==undefined){V().tasks.splice(+e.target.dataset.del,1);save();render()}};
 $('aa').onclick=()=>{if(!P())newP();const p=P();if(!V()){p.versions.push({name:'Manual',date:today(),tasks:[]});p.vi=p.versions.length-1}
- const l=V().tasks.filter(t=>!t.sum).slice(-1)[0],st=l?l.f+1:today();V().tasks.push({id:'m'+Date.now(),name:'Nueva actividad',grp:l?l.grp:'General',s:st,f:st+6,pct:0,crit:false,lvl:2,sum:false});save();render()};
-$('manc').oninput=render;
+ const l=V().tasks.filter(t=>!t.sum).slice(-1)[0],st=l?l.f+1:today();V().tasks.push({id:'m'+Date.now(),name:'Nueva actividad',grp:l?l.grp:'General',s:st,f:st+6,pct:0,crit:false,lvl:2,sum:false,wbs:''});save();render()};
+$('manc').oninput=render;$('sub').onchange=render;
 (async()=>{S=JSON.parse(localStorage.getItem('cs')||'null')||S;
  if(FB){try{await ld('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js');await ld('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js');
   firebase.initializeApp(FB);db=firebase.firestore();const d=await db.collection('curvaS').doc('main').get();if(d.exists)S=JSON.parse(d.data().data)}catch(e){console.error(e)}}
