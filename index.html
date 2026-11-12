@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Curva S · Reparaciones navales</title>
+<style>
+:root{color-scheme:light dark;--bg:#f3f5f8;--c:#fff;--t:#14202e;--m:#5d6b7c;--b:#d8dee6;--p:#1f6feb;--r:#16a34a;--d:#dc2626}
+@media(prefers-color-scheme:dark){:root{--bg:#0e141b;--c:#18212b;--t:#e6edf3;--m:#8b98a8;--b:#2b3744}}
+*{box-sizing:border-box}body{margin:0;font:14px/1.4 system-ui,sans-serif;background:var(--bg);color:var(--t)}
+header{display:flex;justify-content:space-between;align-items:center;padding:12px 20px;background:var(--c);border-bottom:1px solid var(--b)}
+h1{font-size:18px;margin:0}h2{font-size:14px;margin:0 0 8px}
+.adh{text-align:center;font-size:28px;font-weight:700;padding:4px 16px;border-radius:10px;border:2px solid var(--m)}
+.adh small{display:block;font-size:11px;font-weight:400;color:var(--m)}
+main{display:grid;grid-template-columns:minmax(0,2fr) minmax(260px,1fr);gap:12px;padding:12px}
+.card{background:var(--c);border:1px solid var(--b);border-radius:10px;padding:12px;min-width:0}
+.wide{grid-column:1/-1}
+.g{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+label{font-size:12px;color:var(--m);display:block}
+input,select,button{font:inherit;padding:6px 8px;border:1px solid var(--b);border-radius:6px;background:var(--bg);color:var(--t);width:100%}
+button{cursor:pointer;background:var(--p);color:#fff;border:0}button.s{background:var(--m)}
+.row{display:flex;gap:8px;align-items:end;margin-top:8px;flex-wrap:wrap}.row>*{flex:1;min-width:130px}
+svg{width:100%;height:auto}
+.lg{font-size:12px;display:flex;gap:14px;margin-top:4px}.lg i{display:inline-block;width:14px;height:3px;vertical-align:middle;margin-right:4px}
+table{width:100%;border-collapse:collapse;font-size:12px}td,th{padding:4px;border-bottom:1px solid var(--b);text-align:left}
+.cr{background:var(--d);color:#fff;border-radius:4px;padding:0 5px;font-size:10px}
+#dl{max-height:420px;overflow:auto}
+.gr{display:flex;align-items:center;height:22px;font-size:12px}.gn{width:190px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:6px}
+.gt{position:relative;flex:1;height:14px;background:var(--bg);border-radius:3px}
+.gb{position:absolute;top:0;height:100%;background:#8bb4f7;border-radius:3px;overflow:hidden}.gb b{display:block;height:100%;background:var(--p)}
+.gc{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--d)}
+.g2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px}#at input{min-width:90px}#at td:nth-child(2) input{min-width:200px}#at button{width:auto;padding:2px 8px;background:var(--d)}
+.hint{font-size:12px;color:var(--m)}
+@media(max-width:800px){main{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header><h1>⚓ Curva S · Reparaciones navales</h1><div class="adh" id="adh">--%<small>Adherencia a la fecha</small></div></header>
+<main>
+<section class="card wide">
+ <h2>Proyecto</h2>
+ <div class="g">
+  <div><label>Proyecto</label><select id="sp"></select></div>
+  <div><label>&nbsp;</label><button class="s" id="np">+ Nuevo proyecto</button></div>
+  <div><label>Nombre del proyecto</label><input id="name"></div>
+  <div><label>Supervisor a cargo</label><input id="sup"></div>
+  <div><label>Inspector a cargo</label><input id="insp"></div>
+  <div><label>Empresa de la embarcación</label><input id="co"></div>
+ </div>
+ <div class="row">
+  <div><label>Subir versión de cronograma (MS Project → Guardar como XML)</label><input type="file" id="file" accept=".xml"></div>
+  <div><label>Versión activa</label><select id="sv"></select></div>
+  <div><label>Fecha de la versión</label><input type="date" id="vd"></div>
+  <div><label>&nbsp;</label><button class="s" id="inh">Jalar % de versión anterior</button></div>
+ </div>
+ <div class="row">
+  <div><label>Fecha de corte</label><input type="date" id="cut"></div>
+  <div><label>% real manual general (opcional)</label><input type="number" id="man" min="0" max="100" step="0.1"></div>
+  <div><label>% real manual crítica (opcional)</label><input type="number" id="manc" min="0" max="100" step="0.1"></div>
+  <div><label>&nbsp;</label><button id="sc">Guardar corte</button></div>
+  <div><label>&nbsp;</label><button class="s" id="dp">Eliminar versión</button></div>
+ </div>
+ <p class="hint" id="info"></p>
+</section>
+<section class="card wide"><h2>Actividades (datos manuales)</h2>
+ <div style="overflow:auto"><table id="at"></table></div>
+ <div class="row"><div><button id="aa">+ Actividad</button></div></div>
+ <p class="hint">Escribe títulos, fechas y % de avance; marca «Crítica» en la ruta crítica. También puedes importar el XML y corregir aquí.</p></section>
+<section class="card wide"><div class="g2"><div><h2>Curva S general</h2><div id="ch"></div></div><div><h2>Curva S ruta crítica</h2><div id="chc"></div></div></div>
+ <div class="lg"><span><i style="background:var(--p)"></i>Programada</span><span><i style="background:var(--r)"></i>Real</span><span><i style="background:var(--d)"></i>Corte</span></div></section>
+<aside class="card wide"><h2>Actividades con retraso</h2>
+ <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="onlyc" style="width:auto" checked> Solo críticas</label>
+ <div id="dl"></div></aside>
+<section class="card wide"><h2>Gantt general (títulos principales)</h2><div id="gt"></div></section>
+</main>
+<script>
+// ===== Firebase opcional: pega aquí tu configuración (Firestore). Si es null, usa solo localStorage =====
+const FB = null; // {apiKey:"...",authDomain:"...",projectId:"...",appId:"..."}
+let db=null,S={projects:[],cur:-1};
+const $=i=>document.getElementById(i),DAY=864e5;
+const toD=s=>Math.floor(Date.parse(s.slice(0,10))/DAY),fmt=n=>new Date(n*DAY).toISOString().slice(0,10);
+const today=()=>Math.floor(Date.now()/DAY);
+const P=()=>S.projects[S.cur],V=()=>{const p=P();return p&&p.versions[p.vi]};
+const dur=t=>Math.max(t.f-t.s+1,1),leaf=(v,c)=>v.tasks.filter(t=>!t.sum&&(!c||t.crit));
+const ld=u=>new Promise(r=>{const s=document.createElement('script');s.src=u;s.onload=r;document.head.appendChild(s)});
+function save(){localStorage.setItem('cs',JSON.stringify(S));if(db)db.collection('curvaS').doc('main').set({data:JSON.stringify(S)}).catch(console.error)}
+function parse(x){const d=new DOMParser().parseFromString(x,'text/xml'),o=[];let cur='';
+ for(const t of d.getElementsByTagName('Task')){const g=n=>{for(const c of t.children)if(c.tagName===n)return c.textContent;return''};
+  if(g('UID')==='0'||!g('Start'))continue;
+  if(g('Summary')==='1'&&(+g('OutlineLevel')||1)===1)cur=g('Name');o.push({id:g('UID'),grp:cur,name:g('Name'),s:toD(g('Start')),f:toD(g('Finish')),pct:+g('PercentComplete')||0,crit:g('Critical')==='1',lvl:+g('OutlineLevel')||1,sum:g('Summary')==='1'})}
+ const st=d.getElementsByTagName('StatusDate')[0];return{tasks:o,date:st?toD(st.textContent):today()}}
+const planned=(v,d,c)=>{const L=leaf(v,c);let a=0,w=0;L.forEach(t=>{const k=dur(t);w+=k;a+=k*Math.min(Math.max((d-t.s+1)/k,0),1)});return w?a/w*100:0};
+const real=(v,c)=>{const L=leaf(v,c);let a=0,w=0;L.forEach(t=>{const k=dur(t);w+=k;a+=k*t.pct/100});return w?a/w*100:0};
+const range=v=>[Math.min(...v.tasks.map(t=>t.s)),Math.max(...v.tasks.map(t=>t.f))];
+const cutD=()=>$('cut').value?toD($('cut').value):today();
+const realCut=(v,c)=>{const e=$(c?'manc':'man').value;return e!==''?+e:real(v,c)};
+function chart(v,c){if(c&&!leaf(v,true).length)return'<p class="hint">Marca actividades como críticas para ver esta curva.</p>';const p=P(),[a,b]=range(v),W=700,H=300,m=36,X=d=>m+(d-a)/(b-a||1)*(W-m-10),Y=y=>H-24-y/100*(H-40);
+ let s=`<svg viewBox="0 0 ${W} ${H}">`;
+ for(let i=0;i<=5;i++){const y=i*20;s+=`<line x1="${m}" x2="${W-10}" y1="${Y(y)}" y2="${Y(y)}" stroke="var(--b)"/><text x="${m-4}" y="${Y(y)+4}" font-size="10" text-anchor="end" fill="var(--m)">${y}%</text>`;
+  const d=a+(b-a)*i/5;s+=`<text x="${X(d)}" y="${H-8}" font-size="10" text-anchor="middle" fill="var(--m)">${fmt(Math.round(d))}</text>`}
+ let pts=[];for(let d=a;d<=b;d+=Math.max(1,Math.floor((b-a)/150)))pts.push(X(d)+','+Y(planned(v,d,c)));pts.push(X(b)+','+Y(100));
+ s+=`<polyline fill="none" stroke="var(--p)" stroke-width="2.5" points="${pts.join(' ')}"/>`;
+ const rp=[[a,0]];p.versions.forEach(x=>rp.push([x.date,real(x,c)]));p.cuts.forEach(k=>rp.push([k.date,c?(k.realC??k.real):k.real]));
+ rp.sort((x,y)=>x[0]-y[0]);
+ const cd=cutD();if(!rp.some(r=>r[0]===cd))rp.push([cd,realCut(v,c)]);rp.sort((x,y)=>x[0]-y[0]);
+ s+=`<polyline fill="none" stroke="var(--r)" stroke-width="2.5" points="${rp.filter(r=>r[0]>=a-1).map(r=>X(r[0])+','+Y(r[1])).join(' ')}"/>`;
+ rp.slice(1).forEach(r=>s+=`<circle cx="${X(r[0])}" cy="${Y(r[1])}" r="3" fill="var(--r)"/>`);
+ s+=`<line x1="${X(cd)}" x2="${X(cd)}" y1="${Y(100)}" y2="${Y(0)}" stroke="var(--d)" stroke-dasharray="4"/></svg>`;return s}
+function delays(v){const cd=cutD(),oc=$('onlyc').checked;
+ const r=leaf(v).map(t=>({t,e:Math.min(Math.max((cd-t.s+1)/dur(t),0),1)*100})).filter(x=>x.e-x.t.pct>0.5&&x.t.pct<100&&(!oc||x.t.crit))
+  .sort((x,y)=>y.t.crit-x.t.crit||(y.e-y.t.pct)-(x.e-x.t.pct));
+ return r.length?`<table><tr><th>Actividad</th><th>Fin</th><th>Real</th><th>Prog.</th></tr>${r.map(x=>`<tr><td>${x.t.crit?'<span class="cr">CR</span> ':''}${esc(x.t.name)}</td><td>${fmt(x.t.f)}</td><td>${x.t.pct.toFixed(0)}%</td><td>${x.e.toFixed(0)}%</td></tr>`).join('')}</table>`:'<p class="hint">Sin actividades atrasadas con este filtro.</p>'}
+const esc=s=>s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+function gantt(v){const [a,b]=range(v),n=b-a||1,G={};
+ leaf(v).forEach(t=>{const k=t.grp||'General',g=G[k]=G[k]||{name:k,s:1e9,f:0,w:0,a:0};g.s=Math.min(g.s,t.s);g.f=Math.max(g.f,t.f);g.w+=dur(t);g.a+=dur(t)*t.pct/100});
+ const c=Math.min(Math.max((cutD()-a)/n*100,0),100);
+ return Object.values(G).map(g=>`<div class="gr"><div class="gn" title="${esc(g.name)}">${esc(g.name)}</div><div class="gt"><div class="gb" style="left:${(g.s-a)/n*100}%;width:${Math.max((g.f-g.s+1)/n*100,0.5)}%"><b style="width:${g.a/g.w*100}%"></b></div><div class="gc" style="left:${c}%"></div></div></div>`).join('')}
+function atable(v){$('at').innerHTML='<tr><th>Título principal</th><th>Actividad</th><th>Inicio</th><th>Fin</th><th>Días</th><th>Crítica</th><th>% avance</th><th></th></tr>'+v.tasks.map((t,i)=>t.sum?'':`<tr><td><input data-i="${i}" data-k="grp" value="${esc(t.grp||'')}"></td><td><input data-i="${i}" data-k="name" value="${esc(t.name)}"></td><td><input type="date" data-i="${i}" data-k="s" value="${fmt(t.s)}"></td><td><input type="date" data-i="${i}" data-k="f" value="${fmt(t.f)}"></td><td>${dur(t)}</td><td><input type="checkbox" data-i="${i}" data-k="crit" ${t.crit?'checked':''} style="width:auto"></td><td><input type="number" min="0" max="100" step="1" data-i="${i}" data-k="pct" value="${t.pct}"></td><td><button data-del="${i}">✕</button></td></tr>`).join('')}
+function render(){const p=P();
+ $('sp').innerHTML=S.projects.map((x,i)=>`<option value="${i}" ${i===S.cur?'selected':''}>${esc(x.name||'Sin nombre')}</option>`).join('');
+ ['name','sup','insp','co'].forEach(k=>$(k).value=p?p[k]:'');
+ if(!p){$('sv').innerHTML='';return}
+ $('sv').innerHTML=p.versions.map((x,i)=>`<option value="${i}" ${i===p.vi?'selected':''}>V${i+1} · ${esc(x.name)}</option>`).join('');
+ const v=V();if(!v){$('chc').innerHTML=$('at').innerHTML='';$('ch').innerHTML=$('dl').innerHTML=$('gt').innerHTML='<p class="hint">Sube un XML de MS Project o agrega actividades manualmente.</p>';$('adh').firstChild.nodeValue='--%';return}
+ $('vd').value=fmt(v.date);if(!$('cut').value)$('cut').value=fmt(today());
+ const pl=planned(v,cutD()),rl=realCut(v),plC=planned(v,cutD(),1),rlC=realCut(v,1),ad=pl?rl/pl*100:100,adC=plC?rlC/plC*100:100;
+ $('adh').firstChild.nodeValue=ad.toFixed(1)+'%';$('adh').style.borderColor=ad>=95?'var(--r)':ad>=80?'#d97706':'var(--d)';
+ $('info').textContent=`General: prog. ${pl.toFixed(1)}% · real ${rl.toFixed(1)}% (${ad.toFixed(0)}%) | Crítica: prog. ${plC.toFixed(1)}% · real ${rlC.toFixed(1)}% (${adC.toFixed(0)}%) · duración ${range(v)[1]-range(v)[0]+1} días · ${v.tasks.filter(t=>t.crit&&!t.sum).length} actividades críticas`;
+ $('ch').innerHTML=chart(v);$('chc').innerHTML=chart(v,1);atable(v);$('dl').innerHTML=delays(v);$('gt').innerHTML=gantt(v)}
+function newP(){S.projects.push({name:'Nuevo proyecto',sup:'',insp:'',co:'',versions:[],cuts:[],vi:-1});S.cur=S.projects.length-1;save();render()}
+$('np').onclick=newP;
+$('sp').onchange=e=>{S.cur=+e.target.value;render()};
+['name','sup','insp','co'].forEach(k=>$(k).oninput=e=>{if(P()){P()[k]=e.target.value;save()}});
+$('sv').onchange=e=>{P().vi=+e.target.value;save();render()};
+$('vd').onchange=e=>{V().date=toD(e.target.value);save();render()};
+$('cut').onchange=render;$('man').oninput=render;$('onlyc').onchange=render;
+$('file').onchange=async e=>{const f=e.target.files[0];if(!f)return;if(!P())newP();
+ const r=parse(await f.text());if(!r.tasks.length){alert('No se encontraron tareas. Exporta el .mpp como XML desde MS Project.');return}
+ const p=P();p.versions.push({name:f.name,date:r.date,tasks:r.tasks});p.vi=p.versions.length-1;
+ if(!p.name||p.name==='Nuevo proyecto')p.name=f.name.replace(/\.xml$/i,'');save();e.target.value='';render()};
+$('inh').onclick=()=>{const p=P();if(!p||p.vi<1)return alert('Se necesita una versión anterior.');
+ const m={};p.versions[p.vi-1].tasks.forEach(t=>m[t.id]=t.pct);V().tasks.forEach(t=>{if(m[t.id]>t.pct)t.pct=m[t.id]});save();render()};
+$('sc').onclick=()=>{const p=P(),v=V();if(!v)return;const d=cutD();p.cuts=p.cuts.filter(c=>c.date!==d);p.cuts.push({date:d,real:realCut(v),realC:realCut(v,1)});save();render()};
+$('dp').onclick=()=>{const p=P();if(!p||!V()||!confirm('¿Eliminar la versión activa?'))return;p.versions.splice(p.vi,1);p.vi=p.versions.length-1;save();render()};
+$('at').onchange=e=>{const el=e.target,t=V().tasks[+el.dataset.i],k=el.dataset.k;if(!t)return;
+ if(k==='s'||k==='f'){if(el.value)t[k]=toD(el.value)}else if(k==='crit')t.crit=el.checked;else if(k==='pct')t.pct=Math.min(100,Math.max(0,+el.value||0));else t[k]=el.value;
+ if(t.f<t.s)t.f=t.s;save();render()};
+$('at').onclick=e=>{if(e.target.dataset.del!==undefined){V().tasks.splice(+e.target.dataset.del,1);save();render()}};
+$('aa').onclick=()=>{if(!P())newP();const p=P();if(!V()){p.versions.push({name:'Manual',date:today(),tasks:[]});p.vi=p.versions.length-1}
+ const l=V().tasks.filter(t=>!t.sum).slice(-1)[0],st=l?l.f+1:today();V().tasks.push({id:'m'+Date.now(),name:'Nueva actividad',grp:l?l.grp:'General',s:st,f:st+6,pct:0,crit:false,lvl:2,sum:false});save();render()};
+$('manc').oninput=render;
+(async()=>{S=JSON.parse(localStorage.getItem('cs')||'null')||S;
+ if(FB){try{await ld('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js');await ld('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js');
+  firebase.initializeApp(FB);db=firebase.firestore();const d=await db.collection('curvaS').doc('main').get();if(d.exists)S=JSON.parse(d.data().data)}catch(e){console.error(e)}}
+ if(!S.projects.length)newP();else{if(S.cur<0)S.cur=0;render()}})();
+</script>
+</body>
+</html>
